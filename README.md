@@ -2,6 +2,8 @@
 
 A full-stack URL shortener. Paste a long link and get a short one, pick your own custom alias, track how many times it's clicked, and share it with a QR code.
 
+**▶ Live demo: https://zipurl-two.vercel.app**
+
 > This started as one of my first full-stack projects in college (React + Flask + Firebase on Heroku). I rebuilt it in 2026 with a cleaner architecture, a real database layer, click analytics, and tests.
 
 ## Features
@@ -19,9 +21,9 @@ A full-stack URL shortener. Paste a long link and get a short one, pick your own
 |---|---|
 | Frontend | React 19, Vite, `qrcode.react` |
 | Backend | Python, Flask 3 |
-| Database | SQLite |
+| Database | Postgres (Neon) in production, SQLite locally |
 | Testing | pytest (19 tests) |
-| Production server | Gunicorn |
+| Hosting | Vercel (static React build + Flask as a Python function) |
 
 ## How It Works
 
@@ -72,14 +74,13 @@ pytest
 
 ## Deploying
 
-Build the client, then run Flask with Gunicorn. It serves both the React app and the API:
+The live version runs on **Vercel** with a **Neon Postgres** database:
 
-```bash
-cd client && npm run build
-cd ../server && gunicorn app:app
-```
+- `vercel.json` builds the React client into `public/`, which is served as static files
+- `api/index.py` exposes the Flask app as a Python function; `/api/*` and short-link paths are rewritten to it
+- The server uses Postgres automatically when `DATABASE_URL` is set, and falls back to SQLite otherwise
 
-Set `ZIPURL_DB` to choose where the SQLite database is stored (default: `zipurl.db`).
+Every push to `main` deploys automatically.
 
 ## Project Structure
 
@@ -87,7 +88,8 @@ Set `ZIPURL_DB` to choose where the SQLite database is stored (default: `zipurl.
 client/          React + Vite frontend
   src/App.jsx    Shortener form, result card, QR code, link history
   src/api.js     API helpers
+api/index.py     Vercel function entrypoint
 server/          Flask backend
-  app.py         Routes, validation, SQLite storage
+  app.py         Routes, validation, Postgres/SQLite storage
   tests/         pytest suite
 ```
