@@ -1,77 +1,93 @@
-# Zip URL
-A URL Shortener Application build with React JS, Python Flask, Firebase Data Base and Heroku.
+# ⚡ ZipURL
 
-# Getting Started with Create React App
+A full-stack URL shortener. Paste a long link and get a short one, pick your own custom alias, track how many times it's clicked, and share it with a QR code.
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+> This started as one of my first full-stack projects in college (React + Flask + Firebase on Heroku). I rebuilt it in 2026 with a cleaner architecture, a real database layer, click analytics, and tests.
 
-## Available Scripts
+## Features
 
-In the project directory, you can run:
+- **Shorten any link:** generates a random 6-character code, or use your own alias like `/my-portfolio`
+- **Click tracking:** every redirect is counted, and you can see the total and the time of the last click
+- **QR codes:** generated instantly for any short link
+- **Recent links:** your last 10 links are saved in the browser, with one-click copy and live click counts
+- **Validation that protects users:** only `http(s)` URLs are accepted (no `javascript:` links), aliases are checked for format and uniqueness, and reserved paths like `/api` can't be taken
+- **Light and dark mode:** follows your system setting
 
-### `npm start`
+## Tech Stack
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+| Layer | Tech |
+|---|---|
+| Frontend | React 19, Vite, `qrcode.react` |
+| Backend | Python, Flask 3 |
+| Database | SQLite |
+| Testing | pytest (19 tests) |
+| Production server | Gunicorn |
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+## How It Works
 
-### `npm test`
+```
+Browser ──POST /api/links──► Flask ──► SQLite (code, url, clicks, created_at)
+Browser ──GET /<code>──────► Flask ──► increment clicks ──► 302 redirect to original URL
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+In development, Vite proxies `/api` calls to Flask. In production, Flask serves the built React app and the API from one server.
 
-### `npm run build`
+### API
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/links` | Body `{ "url": "...", "alias": "optional" }`. Returns the new link (`201`), `400` if invalid, `409` if the alias is taken |
+| `GET` | `/api/links/<code>` | Stats for a link (URL, clicks, created, last click) |
+| `GET` | `/<code>` | Redirects to the original URL and counts the click |
+| `GET` | `/api/health` | Health check |
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Running Locally
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+**1. Start the API** (Python 3.10+)
 
-### `npm run eject`
+```bash
+cd server
+python -m venv .venv
+.venv\Scripts\activate          # macOS/Linux: source .venv/bin/activate
+pip install -r requirements.txt -r requirements-dev.txt
+flask --app app run
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+**2. Start the client** (Node 20+), in a second terminal
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```bash
+cd client
+npm install
+npm run dev
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+Open http://localhost:5173.
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+### Tests
 
-## Learn More
+```bash
+cd server
+pytest
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## Deploying
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+Build the client, then run Flask with Gunicorn. It serves both the React app and the API:
 
-### Code Splitting
+```bash
+cd client && npm run build
+cd ../server && gunicorn app:app
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+Set `ZIPURL_DB` to choose where the SQLite database is stored (default: `zipurl.db`).
 
-### Analyzing the Bundle Size
+## Project Structure
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
-
-
-
-
+```
+client/          React + Vite frontend
+  src/App.jsx    Shortener form, result card, QR code, link history
+  src/api.js     API helpers
+server/          Flask backend
+  app.py         Routes, validation, SQLite storage
+  tests/         pytest suite
+```
