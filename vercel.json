@@ -1,4 +1,15 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "cd client && npm ci && npm run build"
+  "framework": null,
+  "buildCommand": "cd client && npm ci && npm run build",
+  "outputDirectory": "public",
+  "functions": {
+    "api/index.py": {
+      "excludeFiles": "{client/**,public/**,server/tests/**,server/.venv/**,**/*.db}"
+    }
+  },
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api/index" },
+    { "source": "/:code", "destination": "/api/index" }
+  ]
 }
