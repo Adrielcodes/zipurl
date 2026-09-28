@@ -6,4 +6,6 @@ __pycache__/
 
 # Node
 node_modules/
-client/dist/
+public/
+.vercel/
+.env*.local
